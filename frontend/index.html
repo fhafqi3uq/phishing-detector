@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detector</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; color: #1a1a2e; margin-bottom: 30px; font-size: 24px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: #4361ee; }
+        button {
+            padding: 15px 30px;
+            background: #4361ee;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background: #3a0ca3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .result { margin-top: 20px; padding: 20px; border-radius: 10px; display: none; }
+        .result.safe { background: #d4edda; border: 2px solid #28a745; display: block; }
+        .result.phishing { background: #f8d7da; border: 2px solid #dc3545; display: block; }
+        .result h2 { font-size: 20px; margin-bottom: 10px; }
+        .result.safe h2 { color: #28a745; }
+        .result.phishing h2 { color: #dc3545; }
+        .confidence { font-size: 36px; font-weight: bold; margin: 10px 0; }
+        .result.safe .confidence { color: #28a745; }
+        .result.phishing .confidence { color: #dc3545; }
+        .features { margin-top: 15px; font-size: 13px; color: #555; }
+        .features div { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #ddd; }
+        .features div:last-child { border-bottom: none; }
+        .loading { text-align: center; color: #666; display: none; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phishing URL Detector</h1>
+        <div class="input-group">
+            <input type="text" id="urlInput" placeholder="Nhap URL..." />
+            <button id="checkBtn" onclick="checkURL()">Check</button>
+        </div>
+        <div class="loading" id="loading">Dang kiem tra...</div>
+        <div class="result" id="result"></div>
+    </div>
+    <script>
+        async function checkURL() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) { alert('Nhap URL!'); return; }
+            const btn = document.getElementById('checkBtn');
+            const result = document.getElementById('result');
+            const loading = document.getElementById('loading');
+            btn.disabled = true;
+            result.className = 'result';
+            result.style.display = 'none';
+            loading.style.display = 'block';
+            try {
+                const res = await fetch('http://localhost:8000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await res.json();
+                loading.style.display = 'none';
+                result.style.display = 'block';
+                if (data.is_phishing) {
+                    result.className = 'result phishing';
+                    result.innerHTML = '<h2>CANH BAO: PHISHING!</h2><div class="confidence">' + (data.confidence * 100).toFixed(1) + '%</div><p>Website nay co dau hieu lua dao</p>';
+                } else {
+                    result.className = 'result safe';
+                    result.innerHTML = '<h2>AN TOAN</h2><div class="confidence">' + (data.confidence * 100).toFixed(1) + '%</div><p>Website nay an toan</p>';
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                alert('Loi: ' + err.message);
+            }
+            btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
